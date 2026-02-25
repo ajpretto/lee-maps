@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Maps | Lee &amp; Associates</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#002855;--white:#FFFFFF;--red:#C8102E;--light-gray:#F4F5F7;--medium-gray:#6B7280;--dark-text:#1A1A2E}
+body{font-family:'DM Sans','Segoe UI',sans-serif;color:var(--dark-text);background:var(--light-gray);min-height:100vh}
+.header{background:var(--navy);padding:40px 0 36px;text-align:center}
+.logo-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px}
+.logo-row img{height:36px;filter:brightness(0) invert(1)}
+.logo-text{font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.85)}
+.header h1{font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:700;color:var(--white);margin-bottom:6px}
+.header p{font-size:14px;color:rgba(255,255,255,0.6)}
+.container{max-width:800px;margin:0 auto;padding:32px 24px 60px}
+.map-card{background:var(--white);border-radius:10px;box-shadow:0 2px 12px rgba(0,40,85,0.08);border:1px solid rgba(0,40,85,0.08);padding:24px 28px;margin-bottom:16px;transition:all 0.25s ease;text-decoration:none;display:block;position:relative}
+.map-card:hover{box-shadow:0 6px 24px rgba(0,40,85,0.12);transform:translateY(-2px)}
+.map-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:transparent;border-radius:4px 0 0 4px;transition:background 0.25s ease}
+.map-card:hover::before{background:var(--red)}
+.map-card h2{font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:700;color:var(--dark-text);margin-bottom:4px;line-height:1.3}
+.map-card .meta{font-size:13px;color:var(--medium-gray);margin-bottom:10px}
+.map-card .badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;background:rgba(0,40,85,0.07);color:var(--navy);letter-spacing:0.3px;text-transform:uppercase}
+.map-card .arrow{position:absolute;right:24px;top:50%;transform:translateY(-50%);color:var(--red);font-size:20px;opacity:0;transition:opacity 0.25s ease}
+.map-card:hover .arrow{opacity:1}
+.empty{text-align:center;padding:60px 20px;color:var(--medium-gray);font-size:15px}
+.footer{text-align:center;padding:24px;font-size:12px;color:var(--medium-gray)}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo-row">
+    <img src="https://www.lee-associates.com/wp-content/themes/leeassoc2017/images/lee_and_associates_logo.svg" alt="Lee & Associates" onerror="this.style.display='none'">
+    <span class="logo-text">Property Maps</span>
+  </div>
+  <h1>Interactive Property Maps</h1>
+  <p>Market overviews, availability reports, and client tour maps</p>
+</div>
+<div class="container" id="mapList"></div>
+<div class="footer">Lee &amp; Associates &bull; Powered by OpenStreetMap</div>
+<script>
+var MAPS = [{"file":"Lee-Suburban-SubmarketHighlight-2026-02-25.html","title":"Suburban","type":"Submarket Highlight","date":"2026-02-25"},{"file":"Lee-SuburbanChicagoOfficeRedevelopmentTargets-SubmarketHighlight-2026-02-25.html","title":"Suburban Chicago Office Redevelopment Targets","type":"Submarket Highlight","date":"2026-02-25"},{"file":"Lee-Tampa-TampaBayIndustrialAvailability-SubmarketHighlight-2026-02-25.html","title":"Tampa Bay Industrial Availability","type":"Submarket Highlight","date":"2026-02-25"}];
+var container = document.getElementById('mapList');
+if (MAPS.length === 0) {
+  container.innerHTML = '<div class="empty">No maps published yet.</div>';
+} else {
+  MAPS.forEach(function(m) {
+    var a = document.createElement('a');
+    a.className = 'map-card';
+    a.href = m.file;
+    a.innerHTML = '<h2>' + m.title + '</h2><div class="meta">' + m.date + '</div><span class="badge">' + m.type + '</span><span class="arrow">&rarr;</span>';
+    container.appendChild(a);
+  });
+}
+</script>
+</body>
+</html>

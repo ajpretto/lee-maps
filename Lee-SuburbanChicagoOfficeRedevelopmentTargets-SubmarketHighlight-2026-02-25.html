@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suburban Chicago Office Redevelopment Targets | Lee &amp; Associates</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#002855;--white:#FFFFFF;--red:#C8102E;--light-gray:#F4F5F7;--medium-gray:#6B7280;--dark-text:#1A1A2E;--shadow:0 2px 12px rgba(0,40,85,0.08);--border:1px solid rgba(0,40,85,0.1);--radius-card:8px;--radius-popup:12px;--transition:0.25s ease}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans','Segoe UI',sans-serif;color:var(--dark-text);background:var(--light-gray)}
+.app{display:flex;height:100vh}
+.sidebar{width:380px;min-width:380px;display:flex;flex-direction:column;background:var(--white);border-right:var(--border);box-shadow:2px 0 20px rgba(0,40,85,0.06);z-index:1000}
+.map-container{flex:1;position:relative}
+#map{width:100%;height:100%}
+.sidebar-header{background:var(--navy);padding:20px 24px;color:var(--white)}
+.logo-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.logo-row img{height:32px;filter:brightness(0) invert(1)}
+.logo-text{font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;opacity:0.85}
+.sidebar-header h1{font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.sidebar-header .subtitle{font-size:13px;opacity:0.7;font-weight:400}
+.filters{padding:14px 20px;border-bottom:var(--border);background:var(--white)}
+.filter-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--medium-gray);margin-bottom:8px}
+.filter-pills{display:flex;flex-wrap:wrap;gap:6px}
+.filter-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid rgba(0,40,85,0.15);background:var(--white);color:var(--dark-text);transition:all var(--transition);user-select:none}
+.filter-pill:hover{border-color:var(--navy);background:rgba(0,40,85,0.04)}
+.filter-pill.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.filter-pill.active:hover{background:#003670}
+.property-list{flex:1;overflow-y:auto;padding:8px 0}
+.property-list::-webkit-scrollbar{width:5px}
+.property-list::-webkit-scrollbar-track{background:transparent}
+.property-list::-webkit-scrollbar-thumb{background:rgba(0,40,85,0.15);border-radius:10px}
+.property-card{padding:14px 20px 14px 24px;border-bottom:var(--border);cursor:pointer;transition:all var(--transition);position:relative}
+.property-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:background var(--transition);border-radius:0 3px 3px 0}
+.property-card:hover{background:rgba(0,40,85,0.02)}
+.property-card:hover::before{background:var(--red)}
+.property-card.active{background:rgba(200,16,46,0.04)}
+.property-card.active::before{background:var(--red)}
+.property-card.filtered-out{display:none}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:8px}
+.card-name{font-weight:600;font-size:14px;color:var(--dark-text);line-height:1.3}
+.card-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:rgba(0,40,85,0.08);color:var(--navy);white-space:nowrap;letter-spacing:0.3px}
+.card-address{font-size:12.5px;color:var(--medium-gray);margin-bottom:8px}
+.card-metrics{display:flex;gap:16px}
+.card-metric-value{font-weight:600;font-size:12px;color:var(--dark-text)}
+.card-metric-label{color:var(--medium-gray);font-size:10.5px}
+.summary-stats{padding:16px 20px;background:var(--navy);color:var(--white);display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.stat-item{text-align:center;padding:8px 4px}
+.stat-value{font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:700}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.65;margin-top:2px}
+.empty-state{padding:40px 20px;text-align:center;color:var(--medium-gray);display:none}
+.empty-state.visible{display:block}
+.empty-state p{font-size:14px;line-height:1.5}
+.leaflet-popup-content-wrapper{border-radius:var(--radius-popup)!important;box-shadow:0 8px 30px rgba(0,40,85,0.15)!important;padding:0!important;overflow:hidden}
+.leaflet-popup-content{margin:0!important;width:340px!important;font-family:'DM Sans',sans-serif!important}
+.leaflet-popup-tip{box-shadow:0 4px 12px rgba(0,40,85,0.1)!important}
+.popup-image{width:100%;height:140px;background:linear-gradient(135deg,#002855 0%,#003d7a 50%,#002855 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.popup-image::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none' stroke='rgba(255,255,255,0.12)' stroke-width='1.5'%3E%3Crect x='10' y='25' width='60' height='45' rx='2'/%3E%3Crect x='20' y='10' width='40' height='60' rx='2'/%3E%3Cline x1='30' y1='20' x2='30' y2='30'/%3E%3Cline x1='40' y1='20' x2='40' y2='30'/%3E%3Cline x1='50' y1='20' x2='50' y2='30'/%3E%3Cline x1='30' y1='35' x2='30' y2='45'/%3E%3Cline x1='40' y1='35' x2='40' y2='45'/%3E%3Cline x1='50' y1='35' x2='50' y2='45'/%3E%3Cline x1='30' y1='50' x2='30' y2='60'/%3E%3Cline x1='40' y1='50' x2='40' y2='60'/%3E%3Cline x1='50' y1='50' x2='50' y2='60'/%3E%3C/svg%3E") center center no-repeat}
+.popup-image img{width:100%;height:100%;object-fit:cover}
+.popup-body{padding:16px 18px}
+.popup-type-badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:rgba(0,40,85,0.08);color:var(--navy);letter-spacing:0.3px;margin-bottom:6px}
+.popup-name{font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:700;color:var(--dark-text);margin-bottom:2px;line-height:1.3}
+.popup-address{font-size:12.5px;color:var(--medium-gray);margin-bottom:12px}
+.popup-summary{font-size:12.5px;line-height:1.55;color:#4a4a5a;margin-bottom:14px;font-style:italic;border-left:3px solid var(--red);padding-left:12px}
+.popup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(0,40,85,0.06);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.popup-grid-item{background:var(--white);padding:10px 8px;text-align:center}
+.popup-grid-value{font-size:14px;font-weight:700;color:var(--dark-text)}
+.popup-grid-label{font-size:10px;color:var(--medium-gray);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+.popup-details{font-size:12px;color:var(--medium-gray);line-height:1.6;margin-bottom:12px}
+.popup-details span{color:var(--dark-text);font-weight:500}
+.popup-notes{font-size:12px;line-height:1.5;color:#4a4a5a;background:var(--light-gray);padding:10px 12px;border-radius:6px;margin-bottom:14px}
+.popup-notes-label{font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--medium-gray);margin-bottom:4px}
+.popup-footer{border-top:var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center}
+.popup-footer-brand{font-size:11px;color:var(--medium-gray);font-weight:500}
+.popup-footer-cta{font-size:12px;font-weight:600;color:var(--red);text-decoration:none;cursor:pointer;transition:opacity var(--transition)}
+.popup-footer-cta:hover{opacity:0.75}
+.custom-marker{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);border:2.5px solid var(--white);box-shadow:0 2px 8px rgba(0,40,85,0.3);color:var(--white);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all var(--transition)}
+.custom-marker:hover,.custom-marker.active{background:var(--red);transform:scale(1.15);box-shadow:0 4px 14px rgba(200,16,46,0.35)}
+.custom-marker.faded{opacity:0.3;pointer-events:none}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(0,40,85,0.15)!important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:var(--navy)!important;color:var(--white)!important;font-family:'DM Sans',sans-serif!important;font-weight:600!important;font-size:13px!important}
+@keyframes pinDrop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1}}
+.pin-animate{animation:pinDrop 0.4s ease-out forwards}
+@media(max-width:768px){.app{flex-direction:column-reverse}.sidebar{width:100%;min-width:unset;height:45vh;border-right:none;border-top:2px solid rgba(0,40,85,0.1)}.map-container{height:55vh}.sidebar-header h1{font-size:17px}.leaflet-popup-content{width:280px!important}}
+@media print{.sidebar{display:none}.map-container{width:100%;height:100vh}.leaflet-control-zoom{display:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-row">
+      <img src="https://www.lee-associates.com/wp-content/themes/leeassoc2017/images/lee_and_associates_logo.svg" alt="Lee &amp; Associates" onerror="this.style.display='none'">
+      <span class="logo-text">Chicago Suburban</span>
+    </div>
+    <h1>Suburban Chicago Office Redevelopment Targets</h1>
+    <div class="subtitle">Dan Deuter Target Properties • 44 Properties</div>
+  </div>
+  <div class="filters">
+    <div class="filter-label">Filter by County</div>
+    <div class="filter-pills" id="filterPills">
+      <div class="filter-pill active" data-filter="all">All</div>
+    </div>
+  </div>
+  <div class="property-list" id="propertyList"></div>
+  <div class="empty-state" id="emptyState">
+    <p>No properties match this filter.<br>Try selecting a different county.</p>
+  </div>
+  <div class="summary-stats" id="summaryStats">
+    <div class="stat-item"><div class="stat-value" id="statCount">44</div><div class="stat-label">Properties</div></div>
+    <div class="stat-item"><div class="stat-value" id="statSF">13,504,333</div><div class="stat-label">Total RBA</div></div>
+    <div class="stat-item"><div class="stat-value" id="statAcres">826.6</div><div class="stat-label">Total Acres</div></div>
+  </div>
+</aside>
+<div class="map-container"><div id="map"></div></div>
+</div>
+<script>
+const PROPERTIES = [
+  {
+    "name": "The Crossings",
+    "address": "1420-1520 Kensington Rd",
+    "total_sf": 303510,
+    "lot_size": 33.37998163452709,
+    "city": "Oak Brook",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "broker_notes": "Foreclosure in process.  JLL potentially selling for redevelopment as a datacenter.  Loan collateral includes 8 asets - Columbia Center I & II, Cantera Meadows West, The Crossings, and 5 assets in Atlanta",
+    "state": "IL",
+    "latitude": 41.8489,
+    "longitude": -87.9689,
+    "summary": "A mid-size Multi-tenant office property (33.4-acre, 303,510 SF) in Oak Brook (DuPage County). Foreclosure in process.  JLL potentially selling for redevelopment as a datacenter.  Loan collateral includes 8 asets - Columbia Center I & II, Cantera Meadows West, The Crossings, and 5 assets in Atlanta"
+  },
+  {
+    "name": "Westfield Business Park",
+    "address": "2500 Westfield Dr",
+    "total_sf": 603618,
+    "lot_size": 39.56000918273646,
+    "city": "Elgin",
+    "submarket": "Kane",
+    "tenancy": "Multi",
+    "broker_notes": "Potential datacenter redevelopment.  JP Morgan has a termination option",
+    "state": "IL",
+    "latitude": 42.0773957,
+    "longitude": -88.3385881,
+    "summary": "A large-scale Multi-tenant office property (39.6-acre, 603,618 SF) in Elgin (Kane County). Potential datacenter redevelopment.  JP Morgan has a termination option"
+  },
+  {
+    "name": "Baxter Healthcare Corporate",
+    "address": "1 Baxter Pky",
+    "total_sf": 645688,
+    "lot_size": 101.03089990817263,
+    "city": "Deerfield",
+    "submarket": "Lake",
+    "tenancy": "Single",
+    "broker_notes": "JLL marketing effort failed",
+    "state": "IL",
+    "latitude": 42.1593,
+    "longitude": -87.8477,
+    "summary": "A large-scale Single-tenant office property (101.0-acre, 645,688 SF) in Deerfield (Lake County). JLL marketing effort failed"
+  },
+  {
+    "name": "BP Campus",
+    "address": "150 W Warrenville Rd",
+    "total_sf": 1028260,
+    "lot_size": 42.06572543617998,
+    "city": "Naperville",
+    "submarket": "DuPage",
+    "tenancy": "Single",
+    "broker_notes": "CBRE marketing effort failed",
+    "state": "IL",
+    "latitude": 41.8089268,
+    "longitude": -88.1216075,
+    "summary": "A large-scale Single-tenant office property (42.1-acre, 1,028,260 SF) in Naperville (DuPage County). CBRE marketing effort failed"
+  },
+  {
+    "name": "Chatham Centre",
+    "address": "1901 N Roselle Rd",
+    "total_sf": 210250,
+    "lot_size": 14.86,
+    "city": "Schaumburg",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Full recourse Loan.  Sagent has paid the termination fee.",
+    "state": "IL",
+    "latitude": 42.0619832,
+    "longitude": -88.0794241,
+    "summary": "A mid-size Multi-tenant office property (14.9-acre, 210,250 SF) in Schaumburg (Cook County). Full recourse Loan.  Sagent has paid the termination fee."
+  },
+  {
+    "name": "2300 E Devon Ave",
+    "address": "2300 E Devon Ave",
+    "total_sf": 239331,
+    "lot_size": 7.126997245179063,
+    "city": "Des Plaines",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Former FAA Regional HQ",
+    "state": "IL",
+    "latitude": 41.9954574,
+    "longitude": -87.8731455,
+    "summary": "A mid-size Multi-tenant office property (7.1-acre, 239,331 SF) in Des Plaines (Cook County). Former FAA Regional HQ"
+  },
+  {
+    "name": "Caremark Towers I",
+    "address": "2215 Sanders Rd",
+    "total_sf": 171301,
+    "lot_size": 9.019995408631772,
+    "city": "Glenview",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 42.1134743,
+    "longitude": -87.8771277,
+    "summary": "A sizable Multi-tenant office property (9.0-acre, 171,301 SF) in Glenview (Cook County)."
+  },
+  {
+    "name": "25 Northwest Point Bldg",
+    "address": "25 NW Point Blvd",
+    "total_sf": 207136,
+    "lot_size": 7.1800045913682276,
+    "city": "Elk Grove Village",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Colliers marketing effort failed.",
+    "state": "IL",
+    "latitude": 42.0075,
+    "longitude": -87.9776,
+    "summary": "A mid-size Multi-tenant office property (7.2-acre, 207,136 SF) in Elk Grove Village (Cook County). Colliers marketing effort failed."
+  },
+  {
+    "name": "Commerce Center",
+    "address": "800 Biermann Ct",
+    "total_sf": 123118,
+    "lot_size": 12.34639577594123,
+    "city": "Mount Prospect",
+    "submarket": "Cook",
+    "tenancy": "Single",
+    "broker_notes": "CVS Lease expires 12/24",
+    "state": "IL",
+    "latitude": 42.0784954,
+    "longitude": -87.9228323,
+    "summary": "A sizable Single-tenant office property (12.3-acre, 123,118 SF) in Mount Prospect (Cook County). CVS Lease expires 12/24"
+  },
+  {
+    "name": "Continental Towers",
+    "address": "1701 Golf Rd",
+    "total_sf": 852578,
+    "lot_size": 34,
+    "city": "Rolling Meadows",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Failed Transwestern Marketing in 2024",
+    "state": "IL",
+    "latitude": 42.051147,
+    "longitude": -88.003186,
+    "summary": "A large-scale Multi-tenant office property (34.0-acre, 852,578 SF) in Rolling Meadows (Cook County). Failed Transwestern Marketing in 2024"
+  },
+  {
+    "name": "Westbrook Corporate Center",
+    "address": "1-5 Westbrook Corporate Ctr",
+    "total_sf": 1181615,
+    "lot_size": 48.17,
+    "city": "Westchester",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Will be in default as soon as Follett downsizes (very soon) but trying to explore a workout.",
+    "state": "IL",
+    "latitude": 41.8453588,
+    "longitude": -87.904053,
+    "summary": "A large-scale Multi-tenant office property (48.2-acre, 1,181,615 SF) in Westchester (Cook County). Will be in default as soon as Follett downsizes (very soon) but trying to explore a workout."
+  },
+  {
+    "name": "1933 North Meacham",
+    "address": "1933 N Meacham Rd",
+    "total_sf": 142164,
+    "lot_size": 5.519995408631773,
+    "city": "Schaumburg",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Watchlist",
+    "state": "IL",
+    "latitude": 42.0562713,
+    "longitude": -88.0449752,
+    "summary": "A sizable Multi-tenant office property (5.5-acre, 142,164 SF) in Schaumburg (Cook County). Watchlist"
+  },
+  {
+    "name": "Crossroads Center",
+    "address": "3701 Algonquin Rd",
+    "total_sf": 193104,
+    "lot_size": 6.869995408631772,
+    "city": "Rolling Meadows",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Greenstone Partners failed marketing effort in 2024",
+    "state": "IL",
+    "latitude": 42.0613303,
+    "longitude": -88.0261921,
+    "summary": "A sizable Multi-tenant office property (6.9-acre, 193,104 SF) in Rolling Meadows (Cook County). Greenstone Partners failed marketing effort in 2024"
+  },
+  {
+    "name": "Atrium II",
+    "address": "3030 W Salt Creek Ln",
+    "total_sf": 109000,
+    "lot_size": 5.5,
+    "city": "Arlington Heights",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Near Chicago Bear's potential stadium redevelopment.",
+    "state": "IL",
+    "latitude": 42.0921188,
+    "longitude": -88.021615,
+    "summary": "A sizable Multi-tenant office property (5.5-acre, 109,000 SF) in Arlington Heights (Cook County). Near Chicago Bear's potential stadium redevelopment."
+  },
+  {
+    "name": "Tallgrass Corporate Center",
+    "address": "1000 Remington Blvd",
+    "total_sf": 533365,
+    "lot_size": 49.81999540863177,
+    "city": "Bolingbrook",
+    "submarket": "Will",
+    "tenancy": "Multi",
+    "broker_notes": "Refinanced in July 2023",
+    "state": "IL",
+    "latitude": 41.6782511,
+    "longitude": -88.1058707,
+    "summary": "A large-scale Multi-tenant office property (49.8-acre, 533,365 SF) in Bolingbrook (Will County). Refinanced in July 2023"
+  },
+  {
+    "name": "500 N Field Drive",
+    "address": "500 N Field Drive",
+    "total_sf": 103828,
+    "lot_size": 7.419995408631772,
+    "city": "Lake Forest",
+    "submarket": "Lake",
+    "tenancy": "Single",
+    "broker_notes": "CBRE failed auction with Tenx in Oct 2024",
+    "state": "IL",
+    "latitude": 42.250347,
+    "longitude": -87.8986843,
+    "summary": "A sizable Single-tenant office property (7.4-acre, 103,828 SF) in Lake Forest (Lake County). CBRE failed auction with Tenx in Oct 2024"
+  },
+  {
+    "name": "375 Field Drive",
+    "address": "375 Field Drive",
+    "total_sf": 123456,
+    "lot_size": 7.98,
+    "city": "Lake Forest",
+    "submarket": "Lake",
+    "tenancy": "Single",
+    "broker_notes": "Corporate Owned Excess Real Estate",
+    "state": "IL",
+    "latitude": 42.2481433,
+    "longitude": -87.8979451,
+    "summary": "A sizable Single-tenant office property (8.0-acre, 123,456 SF) in Lake Forest (Lake County). Corporate Owned Excess Real Estate"
+  },
+  {
+    "name": "701 Building",
+    "address": "701 E 22nd St",
+    "total_sf": 174098,
+    "lot_size": 6.36,
+    "city": "Lombard",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "broker_notes": "Maturity Default",
+    "state": "IL",
+    "latitude": 41.8458472,
+    "longitude": -87.9993567,
+    "summary": "A sizable Multi-tenant office property (6.4-acre, 174,098 SF) in Lombard (DuPage County). Maturity Default"
+  },
+  {
+    "name": "1600 Corporate Center",
+    "address": "1600 Golf Rd",
+    "total_sf": 255440,
+    "lot_size": 10.5,
+    "city": "Rolling Meadows",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "REO",
+    "state": "IL",
+    "latitude": 42.0514505,
+    "longitude": -88.0021627,
+    "summary": "A mid-size Multi-tenant office property (10.5-acre, 255,440 SF) in Rolling Meadows (Cook County). REO"
+  },
+  {
+    "name": "Caremark Towers II",
+    "address": "2211 Sanders Rd",
+    "total_sf": 195116,
+    "lot_size": 9.110009182736455,
+    "city": "Glenview",
+    "submarket": "Cook",
+    "tenancy": "Single",
+    "broker_notes": "100% vacant.  Caremark gone.",
+    "state": "IL",
+    "latitude": 42.1135213,
+    "longitude": -87.8771355,
+    "summary": "A sizable Single-tenant office property (9.1-acre, 195,116 SF) in Glenview (Cook County). 100% vacant.  Caremark gone."
+  },
+  {
+    "name": "Crossroads Executive Centre",
+    "address": "3601 Algonquin Rd",
+    "total_sf": 141799,
+    "lot_size": 4.160009182736456,
+    "city": "Rolling Meadows",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "NAI Failed Marketing Effort in 2024",
+    "state": "IL",
+    "latitude": 42.0547567,
+    "longitude": -87.998628,
+    "summary": "A sizable Multi-tenant office property (4.2-acre, 141,799 SF) in Rolling Meadows (Cook County). NAI Failed Marketing Effort in 2024"
+  },
+  {
+    "name": "Prairie Stone Corporate Center",
+    "address": "5450 Prairie Stone Pky",
+    "total_sf": 114213,
+    "lot_size": 2.509550045913682,
+    "city": "Hoffman Estates",
+    "submarket": "Cook",
+    "tenancy": "Single",
+    "broker_notes": "Was with CWCapital but was somehow resolved.  Tate & Lyle lease expires in '28",
+    "state": "IL",
+    "latitude": 42.0712943,
+    "longitude": -88.2150366,
+    "summary": "A sizable Single-tenant office property (2.5-acre, 114,213 SF) in Hoffman Estates (Cook County). Was with CWCapital but was somehow resolved.  Tate & Lyle lease expires in '28"
+  },
+  {
+    "name": "Motorola Solutions Tower & Annex",
+    "address": "1303 E Algonquin Rd & 2100 Progress Parkway",
+    "total_sf": 485000,
+    "lot_size": 47.08464187327824,
+    "city": "Schaumburg",
+    "submarket": "Cook",
+    "tenancy": "Single",
+    "broker_notes": "Motorolla leases expire in 29 and 30.",
+    "state": "IL",
+    "latitude": 42.0641,
+    "longitude": -88.0314,
+    "summary": "A mid-size Single-tenant office property (47.1-acre, 485,000 SF) in Schaumburg (Cook County). Motorolla leases expire in 29 and 30."
+  },
+  {
+    "name": "Metlife Aurora",
+    "address": "177 S Commons Dr",
+    "total_sf": 268970,
+    "lot_size": 37.91000918273645,
+    "city": "Aurora",
+    "submarket": "DuPage",
+    "tenancy": "Single",
+    "broker_notes": "Was with CWCapital but was somehow resolved.  Met Life.  Lease expires Feb 2028.",
+    "state": "IL",
+    "latitude": 41.7504932,
+    "longitude": -88.2190806,
+    "summary": "A mid-size Single-tenant office property (37.9-acre, 268,970 SF) in Aurora (DuPage County). Was with CWCapital but was somehow resolved.  Met Life.  Lease expires Feb 2028."
+  },
+  {
+    "name": "1200 Lakeside Drive",
+    "address": "1200 Lakeside Dr",
+    "total_sf": 260084,
+    "lot_size": 17.119995408631773,
+    "city": "Bannockburn",
+    "submarket": "Lake",
+    "tenancy": "Single",
+    "broker_notes": "Loan balance reduced from $66m",
+    "state": "IL",
+    "latitude": 42.199083,
+    "longitude": -87.8846339,
+    "summary": "A mid-size Single-tenant office property (17.1-acre, 260,084 SF) in Bannockburn (Lake County). Loan balance reduced from $66m"
+  },
+  {
+    "name": "95 W Algonquin Rd",
+    "address": "95 W Algonquin Rd",
+    "total_sf": 136500,
+    "lot_size": 6.25,
+    "city": "Arlington Heights",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "With reserves, lender basis goes doen to $55/sf.Vacant (formerly AT&T) Hamilton partners owns 85 W Algonquin across the street would be about 14 acres together.",
+    "state": "IL",
+    "latitude": 42.0451776,
+    "longitude": -87.9870989,
+    "summary": "A sizable Multi-tenant office property (6.2-acre, 136,500 SF) in Arlington Heights (Cook County). With reserves, lender basis goes doen to $55/sf.Vacant (formerly AT&T) Hamilton partners owns 85 W Algonquin across the street would be about 14 acres together."
+  },
+  {
+    "name": "Arlington Place II",
+    "address": "85 W Algonquin Rd",
+    "total_sf": 133357,
+    "lot_size": 7.2,
+    "city": "Arlington Heights",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Could be paired with 95 W Algonquin for a 14 acre redevelopment",
+    "state": "IL",
+    "latitude": 42.045282,
+    "longitude": -87.986029,
+    "summary": "A sizable Multi-tenant office property (7.2-acre, 133,357 SF) in Arlington Heights (Cook County). Could be paired with 95 W Algonquin for a 14 acre redevelopment"
+  },
+  {
+    "name": "27201 Bella Vista Pky",
+    "address": "27201 Bella Vista Pky",
+    "total_sf": 148000,
+    "lot_size": 16.810009182736454,
+    "city": "Warrenville",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "broker_notes": "NAI failed sale attempt to a Medical Office Converter in 2024.",
+    "state": "IL",
+    "latitude": 41.8096528,
+    "longitude": -88.1574585,
+    "summary": "A sizable Multi-tenant office property (16.8-acre, 148,000 SF) in Warrenville (DuPage County). NAI failed sale attempt to a Medical Office Converter in 2024."
+  },
+  {
+    "name": "Shafer Court",
+    "address": "6400 Shafer Ct",
+    "total_sf": 149657,
+    "lot_size": 4.4899908172635445,
+    "city": "Rosemont",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "REO",
+    "state": "IL",
+    "latitude": 41.9945897,
+    "longitude": -87.8643153,
+    "summary": "A sizable Multi-tenant office property (4.5-acre, 149,657 SF) in Rosemont (Cook County). REO"
+  },
+  {
+    "name": "Northwest Plaza",
+    "address": "9701-9801 W Higgins Rd",
+    "total_sf": 310000,
+    "lot_size": 9.587281910009184,
+    "city": "Rosemont",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "In 2023, we told Wintrust it was worth $10 - $13m as a potential MF development site.",
+    "state": "IL",
+    "latitude": 41.9855,
+    "longitude": -87.8631,
+    "summary": "A mid-size Multi-tenant office property (9.6-acre, 310,000 SF) in Rosemont (Cook County). In 2023, we told Wintrust it was worth $10 - $13m as a potential MF development site."
+  },
+  {
+    "name": "Four Parkway North",
+    "address": "4 Parkway Blvd N",
+    "total_sf": 176187,
+    "lot_size": 6.65,
+    "city": "Deerfield",
+    "submarket": "Lake",
+    "tenancy": "Multi",
+    "broker_notes": "Vacant (formerly CF Industries).  Loan crossed with 2200 Kensington",
+    "state": "IL",
+    "latitude": 42.1541,
+    "longitude": -87.8623,
+    "summary": "A sizable Multi-tenant office property (6.7-acre, 176,187 SF) in Deerfield (Lake County). Vacant (formerly CF Industries).  Loan crossed with 2200 Kensington"
+  },
+  {
+    "name": "Former Ace Hardware Corp",
+    "address": "2200-2222 Kensington Ct",
+    "total_sf": 206030,
+    "lot_size": 10.920018365472911,
+    "city": "Oak Brook",
+    "submarket": "DuPage",
+    "tenancy": "Single",
+    "broker_notes": "Vacant (formerly Ace Hardware) Crossed with 4 Parkway North.",
+    "state": "IL",
+    "latitude": 41.84206,
+    "longitude": -87.9525832,
+    "summary": "A mid-size Single-tenant office property (10.9-acre, 206,030 SF) in Oak Brook (DuPage County). Vacant (formerly Ace Hardware) Crossed with 4 Parkway North."
+  },
+  {
+    "name": "O'Hare Office Park",
+    "address": "999, 1001, 1011, 1111 E Touhy Ave",
+    "total_sf": 534232,
+    "lot_size": 17.1,
+    "city": "Des Plaines",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "MK owns 1001 which is 69,500 of single story on 4.9 acresst is Monteverde",
+    "state": "IL",
+    "latitude": 42.0089,
+    "longitude": -87.8812,
+    "summary": "A large-scale Multi-tenant office property (17.1-acre, 534,232 SF) in Des Plaines (Cook County). MK owns 1001 which is 69,500 of single story on 4.9 acresst is Monteverde"
+  },
+  {
+    "name": "26 Twenty Five Butterfield Rd",
+    "address": "2625 Butterfield Rd",
+    "total_sf": 209239,
+    "lot_size": 10,
+    "city": "Oak Brook",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 41.8463927,
+    "longitude": -87.9829514,
+    "summary": "A mid-size Multi-tenant office property (10.0-acre, 209,239 SF) in Oak Brook (DuPage County)."
+  },
+  {
+    "name": "Lisle Executive Center",
+    "address": "3030 Warrenville Rd",
+    "total_sf": 190226,
+    "lot_size": 8,
+    "city": "Lisle",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 41.808929,
+    "longitude": -88.1147971,
+    "summary": "A sizable Multi-tenant office property (8.0-acre, 190,226 SF) in Lisle (DuPage County)."
+  },
+  {
+    "name": "Touhy Office Plaza at O'Hare",
+    "address": "1400 E Touhy Ave",
+    "total_sf": 126088,
+    "lot_size": 4.8,
+    "city": "Des Plaines",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 42.0104723,
+    "longitude": -87.8888332,
+    "summary": "A sizable Multi-tenant office property (4.8-acre, 126,088 SF) in Des Plaines (Cook County)."
+  },
+  {
+    "name": "American Center",
+    "address": "953 American Ln",
+    "total_sf": 109373,
+    "lot_size": 7.3,
+    "city": "Schaumburg",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 42.0482705,
+    "longitude": -88.0563972,
+    "summary": "A sizable Multi-tenant office property (7.3-acre, 109,373 SF) in Schaumburg (Cook County)."
+  },
+  {
+    "name": "One Energy Center",
+    "address": "40 Shuman Blvd",
+    "total_sf": 162560,
+    "lot_size": 11.8,
+    "city": "Naperville",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 41.8034873,
+    "longitude": -88.1440064,
+    "summary": "A sizable Multi-tenant office property (11.8-acre, 162,560 SF) in Naperville (DuPage County)."
+  },
+  {
+    "name": "2100 Sanders",
+    "address": "2100 Sanders Rd",
+    "total_sf": 106167,
+    "lot_size": 4.8,
+    "city": "Northbrook",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Lee & Associates is marketing without an asking price to users",
+    "state": "IL",
+    "latitude": 42.1495661,
+    "longitude": -87.8831971,
+    "summary": "A sizable Multi-tenant office property (4.8-acre, 106,167 SF) in Northbrook (Cook County). Lee & Associates is marketing without an asking price to users"
+  },
+  {
+    "name": "Park Ridge Plaza",
+    "address": "350 S Northwest Hwy",
+    "total_sf": 270000,
+    "lot_size": 9.6,
+    "city": "Park Ridge",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "state": "IL",
+    "latitude": 42.0070345,
+    "longitude": -87.8237218,
+    "summary": "A mid-size Multi-tenant office property (9.6-acre, 270,000 SF) in Park Ridge (Cook County)."
+  },
+  {
+    "name": "American Center - East Building",
+    "address": "955 American Ln",
+    "total_sf": 177557,
+    "lot_size": 12.4,
+    "city": "Schaumburg",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Formerly Experian single tenant.   Acquired in 2023 to lease as office.",
+    "state": "IL",
+    "latitude": 42.0474356,
+    "longitude": -88.0550882,
+    "summary": "A sizable Multi-tenant office property (12.4-acre, 177,557 SF) in Schaumburg (Cook County). Formerly Experian single tenant.   Acquired in 2023 to lease as office."
+  },
+  {
+    "name": "Bell Works Chicagoland",
+    "address": "2000 Center Dr",
+    "total_sf": 1243483,
+    "lot_size": 38.5,
+    "city": "Hoffman Estates",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Total acreage of 77 acres.  Half of office complex has not been touched leaving other half prime for redevelopment.",
+    "state": "IL",
+    "latitude": 42.0724216,
+    "longitude": -88.128771,
+    "summary": "A large-scale Multi-tenant office property (38.5-acre, 1,243,483 SF) in Hoffman Estates (Cook County). Total acreage of 77 acres.  Half of office complex has not been touched leaving other half prime for redevelopment."
+  },
+  {
+    "name": "Bellworks",
+    "address": "2001 Lakewood Blvd",
+    "total_sf": 281382,
+    "lot_size": 66.4,
+    "city": "Hoffman Estates",
+    "submarket": "Cook",
+    "tenancy": "Multi",
+    "broker_notes": "Vacant",
+    "state": "IL",
+    "latitude": 42.074234,
+    "longitude": -88.136398,
+    "summary": "A mid-size Multi-tenant office property (66.4-acre, 281,382 SF) in Hoffman Estates (Cook County). Vacant"
+  },
+  {
+    "name": "Olympian Office Center",
+    "address": "4343 Commerce Ct",
+    "total_sf": 168253,
+    "lot_size": 7.4,
+    "city": "Lisle",
+    "submarket": "DuPage",
+    "tenancy": "Multi",
+    "broker_notes": "Loan is full recourse",
+    "state": "IL",
+    "latitude": 41.8077672,
+    "longitude": -88.1074298,
+    "summary": "A sizable Multi-tenant office property (7.4-acre, 168,253 SF) in Lisle (DuPage County). Loan is full recourse"
+  }
+];
+
+let activeFilter = 'all';
+let activePropertyIndex = null;
+let markers = [];
+
+const map = L.map('map', { zoomControl: true, attributionControl: true });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19, subdomains: 'abcd'
+}).addTo(map);
+map.zoomControl.setPosition('topright');
+
+function formatSF(n) {
+  if (!n) return null;
+  var num = typeof n === 'string' ? parseInt(n.replace(/[^0-9]/g, '')) : n;
+  return isNaN(num) ? null : num.toLocaleString();
+}
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Build filter pills
+var submarkets = [];
+var seen = {};
+PROPERTIES.forEach(function(p) {
+  if (p.submarket && !seen[p.submarket]) { seen[p.submarket] = true; submarkets.push(p.submarket); }
+});
+submarkets.sort();
+var pillsContainer = document.getElementById('filterPills');
+submarkets.forEach(function(sm) {
+  var pill = document.createElement('div');
+  pill.className = 'filter-pill';
+  pill.dataset.filter = sm;
+  pill.textContent = sm;
+  pill.addEventListener('click', function() { setFilter(sm); });
+  pillsContainer.appendChild(pill);
+});
+document.querySelector('.filter-pill[data-filter="all"]').addEventListener('click', function() { setFilter('all'); });
+
+function setFilter(filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(function(p) {
+    p.classList.toggle('active', p.dataset.filter === filter);
+  });
+  updateVisibility();
+  updateStats();
+}
+
+function buildPopup(p) {
+  var gridItems = '';
+  var gridData = [];
+  if (p.total_sf) gridData.push({ value: formatSF(p.total_sf), label: 'RBA (SF)' });
+  if (p.lot_size) gridData.push({ value: parseFloat(p.lot_size).toFixed(1) + ' ac', label: 'Acres' });
+  if (p.tenancy) gridData.push({ value: p.tenancy, label: 'Tenancy' });
+  if (p.submarket) gridData.push({ value: p.submarket, label: 'County' });
+  if (p.year_built) gridData.push({ value: p.year_built, label: 'Yr Built' });
+  if (p.building_class) gridData.push({ value: 'Class ' + p.building_class, label: 'Bldg Class' });
+  gridData.slice(0, 6).forEach(function(g) {
+    gridItems += '<div class="popup-grid-item"><div class="popup-grid-value">' + g.value + '</div><div class="popup-grid-label">' + g.label + '</div></div>';
+  });
+
+  var detailParts = [];
+  if (p.sale_price) detailParts.push('Sale Price: <span>' + p.sale_price + '</span>');
+  if (p.owner) detailParts.push('Owner: <span>' + escapeHtml(p.owner) + '</span>');
+  var detailsHtml = detailParts.length ? '<div class="popup-details">' + detailParts.join(' &nbsp;&bull;&nbsp; ') + '</div>' : '';
+
+  var notesHtml = p.broker_notes ? '<div class="popup-notes"><div class="popup-notes-label">Notes</div>' + escapeHtml(p.broker_notes) + '</div>' : '';
+  var imageHtml = p.image_url ? '<div class="popup-image"><img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.name) + '"></div>' : '<div class="popup-image"></div>';
+  var badge = p.submarket ? '<div class="popup-type-badge">' + escapeHtml(p.submarket) + ' County</div>' : '';
+
+  return imageHtml +
+    '<div class="popup-body">' + badge +
+    '<div class="popup-name">' + escapeHtml(p.name || p.address) + '</div>' +
+    '<div class="popup-address">' + escapeHtml(p.address) + ', ' + escapeHtml(p.city) + ', ' + escapeHtml(p.state) + '</div>' +
+    (p.summary ? '<div class="popup-summary">' + escapeHtml(p.summary) + '</div>' : '') +
+    (gridItems ? '<div class="popup-grid">' + gridItems + '</div>' : '') +
+    detailsHtml + notesHtml +
+    '<div class="popup-footer"><span class="popup-footer-brand">Lee &amp; Associates</span><span class="popup-footer-cta">Contact Broker &rarr;</span></div></div>';
+}
+
+// Build sidebar cards
+var listContainer = document.getElementById('propertyList');
+PROPERTIES.forEach(function(p, i) {
+  var card = document.createElement('div');
+  card.className = 'property-card';
+  card.dataset.index = i;
+  card.dataset.submarket = p.submarket || '';
+  var metricsHtml = '';
+  if (p.total_sf) metricsHtml += '<div class="card-metric"><div class="card-metric-value">' + formatSF(p.total_sf) + ' SF</div><div class="card-metric-label">RBA</div></div>';
+  if (p.lot_size) metricsHtml += '<div class="card-metric"><div class="card-metric-value">' + parseFloat(p.lot_size).toFixed(1) + ' ac</div><div class="card-metric-label">Acres</div></div>';
+  if (p.tenancy) metricsHtml += '<div class="card-metric"><div class="card-metric-value">' + escapeHtml(p.tenancy) + '</div><div class="card-metric-label">Tenancy</div></div>';
+  card.innerHTML = '<div class="card-header"><div class="card-name">' + escapeHtml(p.name || p.address) + '</div><div class="card-badge">' + escapeHtml(p.submarket ? p.submarket + ' Co.' : 'Office') + '</div></div>' +
+    '<div class="card-address">' + escapeHtml(p.address) + ', ' + escapeHtml(p.city) + '</div>' +
+    '<div class="card-metrics">' + metricsHtml + '</div>';
+  card.addEventListener('click', function() { selectProperty(i); });
+  listContainer.appendChild(card);
+});
+
+// Build markers
+var markerCluster = L.markerClusterGroup({
+  maxClusterRadius: 45, spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true,
+  iconCreateFunction: function(cluster) {
+    var c = cluster.getChildCount();
+    return L.divIcon({
+      html: '<div style="width:40px;height:40px;border-radius:50%;background:rgba(0,40,85,0.12);display:flex;align-items:center;justify-content:center"><div style="width:30px;height:30px;border-radius:50%;background:#002855;color:#fff;display:flex;align-items:center;justify-content:center;font-family:DM Sans,sans-serif;font-weight:700;font-size:13px">' + c + '</div></div>',
+      className: '', iconSize: [40, 40]
+    });
+  }
+});
+
+PROPERTIES.forEach(function(p, i) {
+  if (!p.latitude || !p.longitude) return;
+  var icon = L.divIcon({
+    className: '',
+    html: '<div class="custom-marker pin-animate" style="animation-delay:' + (i * 30) + 'ms" data-index="' + i + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>',
+    iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18]
+  });
+  var marker = L.marker([p.latitude, p.longitude], { icon: icon });
+  marker.bindPopup(buildPopup(p), { maxWidth: 340, minWidth: 340, closeButton: true });
+  marker.on('click', function() { setActiveCard(i); });
+  marker.on('popupclose', function() { clearActiveCard(); });
+  marker.propertyIndex = i;
+  markers.push(marker);
+  markerCluster.addLayer(marker);
+});
+map.addLayer(markerCluster);
+
+if (markers.length > 0) {
+  map.fitBounds(L.featureGroup(markers).getBounds().pad(0.1));
+}
+
+function selectProperty(index) {
+  var p = PROPERTIES[index];
+  if (!p.latitude || !p.longitude) return;
+  setActiveCard(index);
+  map.flyTo([p.latitude, p.longitude], 15, { duration: 1.2 });
+  setTimeout(function() {
+    var m = markers.find(function(mk) { return mk.propertyIndex === index; });
+    if (m) markerCluster.zoomToShowLayer(m, function() { m.openPopup(); });
+  }, 1300);
+}
+
+function setActiveCard(index) {
+  activePropertyIndex = index;
+  document.querySelectorAll('.property-card').forEach(function(c) { c.classList.remove('active'); });
+  var card = document.querySelector('.property-card[data-index="' + index + '"]');
+  if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  document.querySelectorAll('.custom-marker').forEach(function(m) { m.classList.remove('active'); });
+  var el = document.querySelector('.custom-marker[data-index="' + index + '"]');
+  if (el) el.classList.add('active');
+}
+
+function clearActiveCard() {
+  activePropertyIndex = null;
+  document.querySelectorAll('.property-card').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelectorAll('.custom-marker').forEach(function(m) { m.classList.remove('active'); });
+}
+
+function updateVisibility() {
+  var visibleCount = 0;
+  document.querySelectorAll('.property-card').forEach(function(card) {
+    var idx = parseInt(card.dataset.index);
+    var p = PROPERTIES[idx];
+    var show = activeFilter === 'all' || p.submarket === activeFilter;
+    card.classList.toggle('filtered-out', !show);
+    if (show) visibleCount++;
+  });
+  markers.forEach(function(m) {
+    var p = PROPERTIES[m.propertyIndex];
+    var show = activeFilter === 'all' || p.submarket === activeFilter;
+    var el = document.querySelector('.custom-marker[data-index="' + m.propertyIndex + '"]');
+    if (el) el.classList.toggle('faded', !show);
+  });
+  document.getElementById('emptyState').classList.toggle('visible', visibleCount === 0);
+  if (activeFilter !== 'all') {
+    var vis = markers.filter(function(m) { return PROPERTIES[m.propertyIndex].submarket === activeFilter; });
+    if (vis.length > 0) map.flyToBounds(L.featureGroup(vis).getBounds().pad(0.15), { duration: 1.0 });
+  } else {
+    map.flyToBounds(L.featureGroup(markers).getBounds().pad(0.1), { duration: 1.0 });
+  }
+}
+
+function updateStats() {
+  var filtered = PROPERTIES.filter(function(p) { return activeFilter === 'all' || p.submarket === activeFilter; });
+  var totalSF = filtered.reduce(function(s, p) {
+    var n = typeof p.total_sf === 'string' ? parseInt(p.total_sf.replace(/[^0-9]/g, '')) : (p.total_sf || 0);
+    return s + (isNaN(n) ? 0 : n);
+  }, 0);
+  var totalAcres = filtered.reduce(function(s, p) {
+    var n = parseFloat(String(p.lot_size || '0').replace(/[^0-9.]/g, ''));
+    return s + (isNaN(n) ? 0 : n);
+  }, 0);
+  document.getElementById('statCount').textContent = filtered.length;
+  document.getElementById('statSF').textContent = totalSF.toLocaleString();
+  document.getElementById('statAcres').textContent = totalAcres.toFixed(1);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { map.closePopup(); clearActiveCard(); }
+});
+</script>
+</body>
+</html>
